@@ -8,10 +8,10 @@ def format_label(raw_label: str) -> str:
     base = os.path.splitext(str(raw_label))[0]
     return base
 
-def collect_students(images_dir: str):
-    students = []
+def collect_identities(images_dir: str):
+    identities = []
     if not os.path.isdir(images_dir):
-        return students
+        return identities
     for name in sorted(os.listdir(images_dir)):
         path = os.path.join(images_dir, name)
         if not os.path.isdir(path):
@@ -22,14 +22,14 @@ def collect_students(images_dir: str):
                 image_files.append(os.path.join(path, fn))
         if not image_files:
             continue
-        students.append((name, image_files))
-    return students
+        identities.append((name, image_files))
+    return identities
 
-def compute_embeddings(app: FaceAnalysis, students):
+def compute_embeddings(app: FaceAnalysis, identities):
     all_embeddings = []
     all_labels = []
-    for label, image_paths in students:
-        student_embs = []
+    for label, image_paths in identities:
+        identity_embs = []
         for img_path in image_paths:
             img = cv2.imread(img_path)
             if img is None:
@@ -44,10 +44,10 @@ def compute_embeddings(app: FaceAnalysis, students):
             emb = face.embedding
             if emb is None:
                 continue
-            student_embs.append(emb)
-        if not student_embs:
+            identity_embs.append(emb)
+        if not identity_embs:
             continue
-        mean_emb = np.mean(np.stack(student_embs, axis=0), axis=0)
+        mean_emb = np.mean(np.stack(identity_embs, axis=0), axis=0)
         all_embeddings.append(mean_emb)
         formatted_label = format_label(label)
         all_labels.append(formatted_label)
@@ -66,15 +66,15 @@ def main():
 
     os.makedirs(args.output_dir, exist_ok=True)
 
-    students = collect_students(args.images_dir)
-    if not students:
-        print(f"No student folders found in {args.images_dir}")
+    identities = collect_identities(args.images_dir)
+    if not identities:
+        print(f"No identity folders found in {args.images_dir}")
         return
 
     app = FaceAnalysis(name=args.model_name)
     app.prepare(ctx_id=0, det_size=(640, 640))
 
-    embeddings, labels = compute_embeddings(app, students)
+    embeddings, labels = compute_embeddings(app, identities)
     if embeddings is None:
         print("No embeddings were computed. Check your images.")
         return
@@ -87,7 +87,7 @@ def main():
     print(f"Saved embeddings to {embeddings_path}")
     print(f"Saved labels to {labels_path}")
     print(f"Embeddings shape: {embeddings.shape}")
-    print(f"Number of students: {len(labels)}")
+    print(f"Number of identities: {len(labels)}")
 
 if __name__ == "__main__":
     main()
