@@ -1,0 +1,24 @@
+# Python cache
+__pycache__/
+*.pyc
+
+# Virtual environments
+.env/
+.venv/
+venv/
+
+# IDE settings
+.vscode/
+.idea/
+
+# Data and embeddings
+data/
+*.npy
+
+# Model weights
+*.pt
+*.onnx
+
+# OS files
+.DS_Store
+Thumbs.db
