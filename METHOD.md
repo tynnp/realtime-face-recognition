@@ -79,6 +79,15 @@ Với mỗi frame lấy từ webcam/video:
 4. Vẽ khung chữ nhật quanh khuôn mặt và text (tên + similarity) lên frame.
 5. Hiển thị frame bằng OpenCV, nhấn phím `q` để thoát.
 
+#### 2.4. Tối ưu bước so khớp (FAISS – tuỳ chọn)
+
+- Về mặt thuật toán, bước so khớp vẫn là **tìm người có độ tương đồng cao nhất** giữa embedding khuôn mặt hiện tại và các embedding trong database (dựa trên tích vô hướng/cosine similarity).
+- Để tăng tốc khi số lượng người lớn, code cho phép dùng **FAISS** (file `faiss_index.py`) để xây dựng index tìm kiếm nhanh:
+  - Các vector trong `embeddings.npy` sau khi chuẩn hoá được truyền vào hàm `build_faiss_index` để tạo index `IndexFlatIP`.
+  - Ở bước 3 bên trên, thay vì luôn luôn tính toàn bộ tích vô hướng bằng NumPy, code gọi hàm `search_embedding`:
+    - Nếu FAISS được import và khởi tạo thành công → dùng `index.search` của FAISS để tìm **top-1** vector gần nhất.
+    - Nếu FAISS không có hoặc lỗi khởi tạo → **tự động fallback** về tính toán brute-force bằng NumPy đúng như mô tả ở trên.
+
 ### 3. Ý nghĩa của repo này
 
 - Một ví dụ **cơ bản** và dễ hiểu về cách dùng InsightFace để nhận diện khuôn mặt realtime.

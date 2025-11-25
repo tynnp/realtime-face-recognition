@@ -4,6 +4,7 @@ import re
 import cv2
 import numpy as np
 from insightface.app import FaceAnalysis
+from faiss_index import build_faiss_index, search_embedding
 
 def load_database(embeddings_dir: str):
     emb_path = os.path.join(embeddings_dir, "embeddings.npy")
@@ -32,6 +33,8 @@ def recognize_realtime(
 ):
     db_embs, db_labels = load_database(embeddings_dir)
     db_embs_norm = normalize_embeddings(db_embs)
+
+    faiss_index, use_faiss = build_faiss_index(db_embs_norm, num_labels=len(db_labels))
 
     face_app = FaceAnalysis(name=model_name)
     face_app.prepare(ctx_id=0, det_size=(640, 640))
@@ -76,9 +79,14 @@ def recognize_realtime(
 
             emb = emb.astype("float32")
             emb_norm = emb / (np.linalg.norm(emb) + 1e-8)
-            sims = db_embs_norm @ emb_norm
-            best_idx = int(np.argmax(sims))
-            best_sim = float(sims[best_idx])
+
+            best_idx, best_sim = search_embedding(
+                faiss_index=faiss_index,
+                use_faiss=use_faiss,
+                db_embs_norm=db_embs_norm,
+                emb_norm=emb_norm,
+            )
+
             raw_label = str(db_labels[best_idx])
             pretty_label = format_label(raw_label)
 

@@ -1,4 +1,4 @@
-# Hệ thống nhận diện khuôn mặt realtime (InsightFace)
+# Hệ thống nhận diện khuôn mặt realtime
 
 Dự án này là một repo cơ bản minh hoạ hệ thống nhận diện khuôn mặt realtime dùng InsightFace (`FaceAnalysis`) để phát hiện và trích xuất đặc trưng khuôn mặt, có thể chạy trên GPU hoặc CPU (Windows).
 
@@ -12,6 +12,7 @@ _Hình minh hoạ nhận diện realtime._
 - Sử dụng InsightFace (`FaceAnalysis`) để phát hiện và trích xuất đặc trưng khuôn mặt.
 - Có thể chạy trên GPU (onnxruntime-gpu) hoặc CPU (tự động fallback nếu không có GPU).
 - Pipeline enroll (đăng ký) khuôn mặt từ thư mục ảnh và lưu database embeddings.
+- Tăng tốc tìm kiếm gần nhất bằng FAISS (tuỳ chọn, nếu cài đặt).
 
 ## Cấu trúc thư mục
 
@@ -20,6 +21,9 @@ _Hình minh hoạ nhận diện realtime._
 
 - `recognize_realtime.py`  
   Chạy nhận diện khuôn mặt realtime dùng webcam hoặc video.
+
+- `faiss_index.py`  
+  Module tuỳ chọn dùng FAISS để tăng tốc tìm kiếm embedding (nếu FAISS được cài, nếu không sẽ tự động fallback về NumPy).
 
 - `requirements.txt`  
   Danh sách các thư viện Python cần cài.
@@ -140,6 +144,36 @@ Giải thích một số tham số:
   - Nếu hệ thống có GPU + CUDA + `onnxruntime-gpu` phù hợp, model sẽ chạy trên GPU.
   - Nếu không có GPU, onnxruntime sẽ tự động fallback sang CPU (chậm hơn nhưng vẫn chạy được).
 - Nếu bạn muốn **ép chạy CPU**, có thể sửa `ctx_id=0` thành `ctx_id=-1` trong `enroll_faces.py` và `recognize_realtime.py`.
+
+### Tăng tốc tìm kiếm bằng FAISS (tuỳ chọn)
+
+- Mặc định, hệ thống sử dụng NumPy để tính độ tương đồng giữa embedding khuôn mặt hiện tại và database (`db_embs_norm @ emb_norm`). Cách này đơn giản và đủ nhanh nếu số lượng người (N) còn ít.
+- Khi N lớn (hàng ngàn người trở lên), bạn có thể cài thêm FAISS để tăng tốc tìm kiếm gần nhất.
+
+#### Cài đặt FAISS (gợi ý)
+
+- Nếu dùng Conda (khuyến nghị):
+
+```bash
+conda install -c pytorch faiss-cpu
+# hoặc (chỉ khi đã thiết lập CUDA phù hợp)
+# conda install -c pytorch faiss-gpu
+```
+
+- Nếu dùng pip (tuỳ môi trường):
+
+```bash
+pip install faiss-cpu
+```
+
+> Lưu ý: tuỳ phiên bản Python/Windows mà gói `faiss-cpu` có thể không có sẵn wheel. Khi đó dùng Conda thường ổn định hơn.
+
+#### Cách hoạt động trong code
+
+- Logic FAISS được tách riêng trong file `faiss_index.py`.
+- Khi chạy `recognize_realtime.py`:
+  - Nếu import FAISS thành công và khởi tạo index OK, chương trình sẽ in log dạng: `FAISS enabled with <N> embeddings.` và dùng FAISS để tìm hàng xóm gần nhất.
+  - Nếu không cài FAISS hoặc khởi tạo lỗi, chương trình sẽ in thông báo lỗi và **tự động fallback về NumPy search**, nên vẫn hoạt động bình thường (chỉ là chậm hơn khi database rất lớn).
 
 ## Phương pháp nhận diện khuôn mặt
 
